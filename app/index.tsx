@@ -67,14 +67,14 @@ export default function HomeScreen() {
         className="absolute bottom-[60px] w-full flex-row items-center justify-between pl-5 pr-[30px]"
       >
         <TextInput
-          className="w-[250px] rounded-full border border-[#c0c0c0] bg-white px-[15px] py-[15px]"
+          className="w-[290px] rounded-full border border-[#c0c0c0] bg-white px-[15px] py-[15px]"
           placeholder="Write a task"
           placeholderTextColor="#656262ff"
           value = {task}
           onChangeText={text => setTask(text)}
         />
         <TouchableOpacity onPress={() => handleAddTask()}>
-          <View className="h-[60px] w-[60px] items-center justify-center rounded-full border border-[#c0c0c0] bg-white">
+          <View className="h-[60px] w-[60px] items-center mr-[20px] justify-center rounded-full border border-[#c0c0c0] bg-white">
             <Text className="text-[#656262ff]">+</Text>
           </View>
         </TouchableOpacity>
