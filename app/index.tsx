@@ -1,37 +1,60 @@
 import Task from '@/components/Task';
 import React, { useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+type TaskItem = {
+  id: string;
+  text: string;
+  completed: boolean;
+};
 
 export default function HomeScreen() {
   const [task, setTask] = useState<string>('');
-  const [taskItems, setTaskItems] = useState<string[]>([]);
+  const [taskItems, setTaskItems] = useState<TaskItem[]>([]);
 
   const handleAddTask = () => {
+    const trimmed = task.trim();
+    if (!trimmed) return;
+
     Keyboard.dismiss();
-    setTaskItems([...taskItems, task]);
+    setTaskItems((prev) => [
+      ...prev,
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        text: trimmed,
+        completed: false,
+      },
+    ]);
     setTask('');
-    console.log(taskItems);
   }
 
-  const completeTask = (index : number) => {
-    let itemsCopy = [...taskItems];
-    itemsCopy.splice(index, 1);
-    setTaskItems(itemsCopy);
+  const toggleTaskCompleted = (id: string) => {
+    setTaskItems((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
+    );
+  };
+
+  const deleteTask = (id: string) => {
+    setTaskItems((prev) => prev.filter((t) => t.id !== id));
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.tasksWrapper}>
-        <Text style={styles.sectionTitle}>Today's tasks</Text>
-
-        <View style={styles.items}>
+    <View className="flex-1">
+      <View className="pt-20 px-5">
+        <Text className="text-2xl font-bold">{"Today's tasks"}</Text>
+ 
+        <View className="mt-[30px]">
           {/* This is where the tasks will go! */}
           {
-            taskItems.map((item, index) => {
+            taskItems.map((item) => {
               return (
-                <TouchableOpacity key={index} onPress={() => completeTask(index)}>
-                <Task key={index} text={item}/>
-                </TouchableOpacity>
+                <Task
+                  key={item.id}
+                  text={item.text}
+                  completed={item.completed}
+                  onToggleComplete={() => toggleTaskCompleted(item.id)}
+                  onDelete={() => deleteTask(item.id)}
+                />
               )
             })
           }
@@ -41,72 +64,21 @@ export default function HomeScreen() {
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? "padding" : "height"}
-        style={styles.writeTaskWrapper}
+        className="absolute bottom-[60px] w-full flex-row items-center justify-between pl-5 pr-[30px]"
       >
-        <TextInput style={styles.input} placeholder="Write a task" placeholderTextColor='#656262ff' 
+        <TextInput
+          className="w-[250px] rounded-full border border-[#c0c0c0] bg-white px-[15px] py-[15px]"
+          placeholder="Write a task"
+          placeholderTextColor="#656262ff"
           value = {task}
           onChangeText={text => setTask(text)}
         />
         <TouchableOpacity onPress={() => handleAddTask()}>
-          <View style={styles.addWrapper}>
-            <Text style={styles.addText}>+</Text>
+          <View className="h-[60px] w-[60px] items-center justify-center rounded-full border border-[#c0c0c0] bg-white">
+            <Text className="text-[#656262ff]">+</Text>
           </View>
         </TouchableOpacity>
       </KeyboardAvoidingView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  text: {
-    fontSize: 24,
-  },
-  tasksWrapper: {
-    paddingTop: 80,
-    paddingHorizontal: 20,
-
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  items:{
-    marginTop: 30,
-  },
-  writeTaskWrapper: {
-    position: 'absolute',
-    bottom: 60,
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginLeft: 20,
-  },
-  input: {
-    paddingVertical: 15,
-    width: 250,
-    paddingHorizontal: 15,
-    backgroundColor: "#FFF",
-    borderRadius: 60,
-    borderColor: '#c0c0c0',
-    borderWidth: 1,
-  },
-  addWrapper: {
-    width: 60,
-    height: 60,
-    backgroundColor: "#FFF",
-    borderRadius: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderColor: '#c0c0c0',
-    borderWidth: 1,
-    marginRight: 30,
-  },
-  addText: {
-    color: '#656262ff',
-
-  },
-});
