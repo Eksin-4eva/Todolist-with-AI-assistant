@@ -45,3 +45,6 @@ app-example
 
 nativewind迁移教程.md
 zustand-migration.md
+
+# docs (except README.md)
+docs/

@@ -30,7 +30,7 @@ export default function AuthScreen() {
       : await supabase.auth.signUp({ email: toEmail(u), password: p });
     setLoading(false);
 
-    if (error) Alert.alert('Error', error.message);
+    if (error) Alert.alert('错误', error.message);
   };
 
   return (
@@ -39,12 +39,12 @@ export default function AuthScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <Text className="mb-8 text-3xl font-bold">
-        {isLogin ? 'Welcome back' : 'Create account'}
+        {isLogin ? '欢迎回来' : '创建账号'}
       </Text>
 
       <TextInput
         className="mb-4 w-full rounded-xl border border-[#c0c0c0] px-4 py-4"
-        placeholder="Username"
+        placeholder="用户名"
         placeholderTextColor="#656262"
         autoCapitalize="none"
         value={username}
@@ -52,7 +52,7 @@ export default function AuthScreen() {
       />
       <TextInput
         className="mb-6 w-full rounded-xl border border-[#c0c0c0] px-4 py-4"
-        placeholder="Password"
+        placeholder="密码"
         placeholderTextColor="#656262"
         secureTextEntry
         value={password}
@@ -68,14 +68,14 @@ export default function AuthScreen() {
           <ActivityIndicator color="#fff" />
         ) : (
           <Text className="font-bold text-white">
-            {isLogin ? 'Sign in' : 'Sign up'}
+            {isLogin ? '登录' : '注册'}
           </Text>
         )}
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => setIsLogin((v) => !v)}>
         <Text className="text-[#55BCF6]">
-          {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+          {isLogin ? '没有账号？去注册' : '已有账号？去登录'}
         </Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>

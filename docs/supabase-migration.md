@@ -2,40 +2,17 @@
 
 ## 背景
 
-原项目状态仅存在内存中（Zustand），刷新后丢失。本次迁移将数据持久化至 Supabase，并增加邮箱登录注册功能，每个用户只能看到自己的任务。
+原项目状态仅存在内存中（Zustand），刷新后丢失。本次迁移将数据持久化至 Supabase，并增加用户名密码登录注册功能，每个用户只能看到自己的任务。
 
 ---
 
 ## 一、Supabase 控制台配置
 
-### 1. 建表
+### 1. 建表与 RLS
 
-在 Supabase Dashboard → SQL Editor 执行：
+详见 [docs/supabase-schema.md](./supabase-schema.md)。
 
-```sql
-create table tasks (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  text text not null,
-  completed boolean not null default false,
-  created_at timestamptz not null default now()
-);
-```
-
-### 2. 开启 Row Level Security
-
-```sql
-alter table tasks enable row level security;
-
--- 用户只能读写自己的任务
-create policy "users can manage own tasks"
-  on tasks
-  for all
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
-```
-
-### 3. 开启 Email 认证
+### 2. 开启 Email 认证
 
 Dashboard → Authentication → Providers → Email，确保已启用。
 
@@ -56,6 +33,7 @@ npm install @supabase/supabase-js
 ```
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+EXPO_PUBLIC_QWEN_API_KEY=your-qwen-api-key
 ```
 
 复制 `.env.example` 作为模板给团队成员。
@@ -64,14 +42,18 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 | 文件 | 变更 |
 |------|------|
-| `.env` | 新增，存放 Supabase URL 和 anon key |
+| `.env` | 新增，存放 Supabase URL、anon key、Qwen API key |
 | `.env.example` | 新增，环境变量模板 |
 | `.gitignore` | 新增 `.env` 忽略规则 |
 | `lib/supabase.ts` | 新增，创建 Supabase 客户端 |
-| `app/auth.tsx` | 新增，登录/注册页面 |
-| `app/_layout.tsx` | 更新，监听 session 状态，未登录跳转 `/auth` |
+| `app/auth.tsx` | 新增，登录/注册页面（用户名密码） |
+| `app/_layout.tsx` | 更新，监听 session 状态，未登录跳转 `/auth`，登录后跳转 `/(tabs)` |
+| `app/(tabs)/_layout.tsx` | 新增，底部导航栏（待办 + AI 助手） |
+| `app/(tabs)/index.tsx` | 新增，待办页面（从 index.tsx 迁移） |
+| `app/(tabs)/ai.tsx` | 新增，AI 助手页面 |
+| `app/index.tsx` | 更新，重定向至 `/(tabs)` |
 | `store/todoStore.ts` | 更新，所有操作改为异步，绑定 `user_id` |
-| `app/index.tsx` | 更新，加载时 `fetchTasks`，右上角 Sign out |
+| `docs/supabase-schema.md` | 新增，建表 SQL 存档 |
 
 ---
 
@@ -84,12 +66,11 @@ supabase.auth.onAuthStateChange((_event, session) => {
   setSession(session);
 });
 
-// session 变化时自动跳转
 useEffect(() => {
   if (!initialized) return;
   const inAuth = segments[0] === 'auth';
   if (!session && !inAuth) router.replace('/auth');
-  else if (session && inAuth) router.replace('/');
+  else if (session && inAuth) router.replace('/(tabs)');
 }, [session, initialized]);
 ```
 
@@ -109,10 +90,10 @@ RLS policy 在数据库层面也做了二次保护。
 ## 四、复现方法
 
 1. 在 [supabase.com](https://supabase.com) 创建新项目
-2. 执行上方建表和 RLS SQL
+2. 执行 [docs/supabase-schema.md](./supabase-schema.md) 中的建表和 RLS SQL
 3. 复制 `.env.example` 为 `.env`，填入项目的 URL 和 anon key（Dashboard → Project Settings → API）
 4. `npm install`
-5. `npm start`
+5. `npx expo start`
 
 ---
 
