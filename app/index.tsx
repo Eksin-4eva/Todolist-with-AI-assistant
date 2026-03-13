@@ -1,41 +1,19 @@
 import Task from '@/components/Task';
 import React, { useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
-type TaskItem = {
-  id: string;
-  text: string;
-  completed: boolean;
-};
+import { useTodoStore } from '@/store/todoStore';
 
 export default function HomeScreen() {
   const [task, setTask] = useState<string>('');
-  const [taskItems, setTaskItems] = useState<TaskItem[]>([]);
+  const { tasks, addTask, toggleTask, deleteTask } = useTodoStore();
 
   const handleAddTask = () => {
     const trimmed = task.trim();
     if (!trimmed) return;
 
     Keyboard.dismiss();
-    setTaskItems((prev) => [
-      ...prev,
-      {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        text: trimmed,
-        completed: false,
-      },
-    ]);
+    addTask(trimmed);
     setTask('');
-  }
-
-  const toggleTaskCompleted = (id: string) => {
-    setTaskItems((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
-    );
-  };
-
-  const deleteTask = (id: string) => {
-    setTaskItems((prev) => prev.filter((t) => t.id !== id));
   }
 
   return (
@@ -46,13 +24,13 @@ export default function HomeScreen() {
         <View className="mt-[30px]">
           {/* This is where the tasks will go! */}
           {
-            taskItems.map((item) => {
+            tasks.map((item) => {
               return (
                 <Task
                   key={item.id}
                   text={item.text}
                   completed={item.completed}
-                  onToggleComplete={() => toggleTaskCompleted(item.id)}
+                  onToggleComplete={() => toggleTask(item.id)}
                   onDelete={() => deleteTask(item.id)}
                 />
               )
