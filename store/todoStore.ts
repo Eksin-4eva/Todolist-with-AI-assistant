@@ -1,42 +1,72 @@
 import { create } from 'zustand';
+import { supabase } from '@/lib/supabase';
 
-type TaskItem = {
+export type TaskItem = {
   id: string;
   text: string;
   completed: boolean;
+  user_id: string;
 };
 
 type TodoStore = {
   tasks: TaskItem[];
-  addTask: (text: string) => void;
-  toggleTask: (id: string) => void;
-  deleteTask: (id: string) => void;
+  loading: boolean;
+  fetchTasks: () => Promise<void>;
+  addTask: (text: string) => Promise<void>;
+  toggleTask: (id: string, completed: boolean) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
 };
 
 export const useTodoStore = create<TodoStore>((set) => ({
   tasks: [],
+  loading: false,
 
-  addTask: (text) =>
-    set((state) => ({
-      tasks: [
-        ...state.tasks,
-        {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          text,
-          completed: false,
-        },
-      ],
-    })),
+  fetchTasks: async () => {
+    set({ loading: true });
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    console.log('[fetchTasks] user:', user?.id, 'userError:', userError);
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', user?.id)
+      .order('created_at', { ascending: true });
+    console.log('[fetchTasks] data:', data, 'error:', error);
+    set({ tasks: data ?? [], loading: false });
+  },
 
-  toggleTask: (id) =>
-    set((state) => ({
-      tasks: state.tasks.map((t) =>
-        t.id === id ? { ...t, completed: !t.completed } : t
-      ),
-    })),
+  addTask: async (text) => {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    console.log('[addTask] user:', user?.id, 'userError:', userError);
+    const { error } = await supabase
+      .from('tasks')
+      .insert({ text, completed: false, user_id: user?.id });
+    console.log('[addTask] insert error:', error);
+    if (!error) {
+      const { data, error: fetchError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: true });
+      console.log('[addTask] refetch data:', data, 'fetchError:', fetchError);
+      set({ tasks: data ?? [] });
+    }
+  },
 
-  deleteTask: (id) =>
-    set((state) => ({
-      tasks: state.tasks.filter((t) => t.id !== id),
-    })),
+  toggleTask: async (id, completed) => {
+    const { data } = await supabase
+      .from('tasks')
+      .update({ completed: !completed })
+      .eq('id', id)
+      .select()
+      .single();
+    if (data)
+      set((state) => ({
+        tasks: state.tasks.map((t) => (t.id === id ? data : t)),
+      }));
+  },
+
+  deleteTask: async (id) => {
+    await supabase.from('tasks').delete().eq('id', id);
+    set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) }));
+  },
 }));

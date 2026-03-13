@@ -1,57 +1,73 @@
 import Task from '@/components/Task';
-import React, { useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { supabase } from '@/lib/supabase';
 import { useTodoStore } from '@/store/todoStore';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 export default function HomeScreen() {
   const [task, setTask] = useState<string>('');
-  const { tasks, addTask, toggleTask, deleteTask } = useTodoStore();
+  const { tasks, loading, fetchTasks, addTask, toggleTask, deleteTask } = useTodoStore();
 
-  const handleAddTask = () => {
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  const handleAddTask = async () => {
     const trimmed = task.trim();
     if (!trimmed) return;
-
     Keyboard.dismiss();
-    addTask(trimmed);
     setTask('');
-  }
+    await addTask(trimmed);
+  };
 
   return (
     <View className="flex-1">
       <View className="pt-20 px-5">
-        <Text className="text-2xl font-bold">{"Today's tasks"}</Text>
- 
-        <View className="mt-[30px]">
-          {/* This is where the tasks will go! */}
-          {
-            tasks.map((item) => {
-              return (
-                <Task
-                  key={item.id}
-                  text={item.text}
-                  completed={item.completed}
-                  onToggleComplete={() => toggleTask(item.id)}
-                  onDelete={() => deleteTask(item.id)}
-                />
-              )
-            })
-          }
+        <View className="flex-row items-center justify-between">
+          <Text className="text-2xl font-bold">{"Today's tasks"}</Text>
+          <TouchableOpacity onPress={() => supabase.auth.signOut()}>
+            <Text className="text-[#55BCF6]">Sign out</Text>
+          </TouchableOpacity>
         </View>
 
+        <View className="mt-[30px]">
+          {loading ? (
+            <ActivityIndicator size="small" color="#55BCF6" />
+          ) : (
+            tasks.map((item) => (
+              <Task
+                key={item.id}
+                text={item.text}
+                completed={item.completed}
+                onToggleComplete={() => toggleTask(item.id, item.completed)}
+                onDelete={() => deleteTask(item.id)}
+              />
+            ))
+          )}
+        </View>
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? "padding" : "height"}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="absolute bottom-[60px] w-full flex-row items-center justify-between pl-5 pr-[30px]"
       >
         <TextInput
           className="w-[290px] rounded-full border border-[#c0c0c0] bg-white px-[15px] py-[15px]"
           placeholder="Write a task"
           placeholderTextColor="#656262ff"
-          value = {task}
-          onChangeText={text => setTask(text)}
+          value={task}
+          onChangeText={setTask}
         />
-        <TouchableOpacity onPress={() => handleAddTask()}>
+        <TouchableOpacity onPress={handleAddTask}>
           <View className="h-[60px] w-[60px] items-center mr-[20px] justify-center rounded-full border border-[#c0c0c0] bg-white">
             <Text className="text-[#656262ff]">+</Text>
           </View>
